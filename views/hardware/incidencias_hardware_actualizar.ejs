@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Actualizar Incidencia Hardware</title>
+    <link rel="stylesheet" href="/css/actualizar.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <h1>Actualizar Incidencia Hardware</h1>
+
+    <% if (messages.error_msg) { %> 
+        <div class="alert alert-danger"><%= messages.error_msg %></div>
+    <% } %>
+    <% if (messages.success_msg) { %> 
+        <div class="alert alert-success"><%= messages.success_msg %></div>
+    <% } %>
+    
+    <form action="/incidencias_hardware/actualizar/<%= incidencia.id_incidencia %>" method="POST">
+        <label for="descripcion_incidencia">Descripción:</label>
+        <input type="text" name="descripcion_incidencia" value="<%= incidencia.descripcion_incidencia %>" required>
+
+        <label for="fecha_reporte">Fecha de Reporte:</label>
+        <input type="datetime-local" name="fecha_reporte" value="<%= incidencia.fecha_reporte %>" required>
+
+        <label for="estado">Estado:</label>
+        <select name="estado" required>
+            <option value="">Seleccione un Tipo de Estado</option>
+            <option value="abierta" <%= incidencia.estado === 'abierta' ? 'selected' : '' %>>Abierta</option>
+            <option value="en progreso" <%= incidencia.estado === 'en progreso' ? 'selected' : '' %>>En Progreso</option>
+            <option value="cerrada" <%= incidencia.estado === 'cerrada' ? 'selected' : '' %>>Cerrada</option>
+            <option value="cancelada" <%= incidencia.estado === 'cancelada' ? 'selected' : '' %>>Cancelada</option>
+        </select>
+
+        <label for="prioridad">Prioridad:</label>
+        <select name="prioridad" required>
+            <option value="">Seleccione un Tipo de Prioridad</option>
+            <option value="baja" <%= incidencia.prioridad === 'baja' ? 'selected' : '' %>>Baja</option>
+            <option value="media" <%= incidencia.prioridad === 'media' ? 'selected' : '' %>>Media</option>
+            <option value="alta" <%= incidencia.prioridad === 'alta' ? 'selected' : '' %>>Alta</option>
+        </select>
+
+        <label for="id_ubicacion">Ubicación:</label>
+        <select name="id_ubicacion" id="id_ubicacion" required onchange="cargarHardwarePorUbicacion(this.value)">
+            <% ubicaciones.forEach(ubicacion => { %>
+                <option value="<%= ubicacion.id_ubicacion %>" <%= ubicacion.id_ubicacion === incidencia.id_ubicacion ? 'selected' : '' %>><%= ubicacion.nombre_ubicacion %></option>
+            <% }) %>
+        </select>
+
+        <label for="id_hardware">Hardware:</label>
+        <select name="id_hardware" id="id_hardware" required>
+            <option value="">Seleccione un hardware</option>
+            <% hardware.forEach(hw => { %>
+                <option value="<%= hw.id_hardware %>" <%= hw.id_hardware === incidencia.id_hardware ? 'selected' : '' %>><%= hw.marca %> - <%= hw.modelo %></option>
+            <% }) %>
+        </select>
+
+        <label for="id_usuario">Usuario:</label>
+        <select name="id_usuario" required>
+            <% usuarios.forEach(usuario => { %>
+                <option value="<%= usuario.id %>"><%= usuario.username %></option>
+            <% }) %>
+        </select> 
+
+        <button type="submit">Actualizar Incidencia</button>
+        <button class="button-rdc" onclick="window.location.href='/ubicaciones/listar'">Cancelar</button>
+    </form>
+
+        <!-- Sección de chat -->
+        <section id="chatSection" style="display: none;">
+            <h3>LepantoChat</h3>
+            <div id="chatContainer">
+                <div id="messages" style="height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
+                <% if (user.rol === 'tecnico' || user.rol === 'admin') { %>
+                    <input type="text" id="chatInput" placeholder="Escribe tu mensaje aquí..." />
+                    <button onclick="sendMessage()">Enviar</button>
+                <% } else { %>
+                    <input type="text" id="chatInput" placeholder="No tienes permiso para enviar mensajes." disabled />
+                <% } %>
+            </div>
+        </section>
+        
+        <!-- Botón para abrir/cerrar el chat -->
+        <% if (user.rol === 'tecnico' || user.rol === 'admin') { %>
+            <button class="chat-toggle-button" onclick="toggleChat()">💬
+                <span class="notification-dot" id="notificationDot"></span>
+            </button>
+        <% } %>
+
+    <script>
+        function cargarHardwarePorUbicacion(idUbicacion) {
+            const hardwareSelect = document.getElementById('id_hardware');
+            hardwareSelect.innerHTML = '';
+
+            fetch(`/hardware/ubicacion/${idUbicacion}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(hw => {
+                        const option = document.createElement('option');
+                        option.value = hw.id_hardware;
+                        option.textContent = `${hw.id_hardware} - ${hw.marca}`;
+                        hardwareSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        const userName = "<%= user.username %>";
+        const userId = "<%= user.id %>";
+
+        // Conexión a Socket.IO
+        const socket = io();
+
+        // Verificar si hay una notificación pendiente al cargar la página
+        if (localStorage.getItem('newMessageNotification') === 'true') {
+            document.getElementById('notificationDot').style.display = 'block';
+        }
+
+        // Escuchar el historial de mensajes al cargar la página
+        socket.on('cargar-mensajes', (mensajes) => {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = ""; // Limpiar mensajes previos
+
+            mensajes.forEach((msg) => {
+                const { username, mensaje, fecha } = msg;
+                messagesContainer.innerHTML += `<div><strong>${username}</strong> [${new Date(fecha).toLocaleString()}]: ${mensaje}</div>`;
+            });
+
+            // Desplazar hacia abajo para mostrar los mensajes más recientes
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
+
+        // Función para enviar un mensaje
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (message) {
+                const msg = {
+                    userId: userId,
+                    mensaje: message,
+                    username: userName
+                };
+
+                // Emitir el mensaje al servidor
+                socket.emit('mensaje', msg);
+
+                // Limpiar el campo de entrada
+                input.value = '';
+            }
+        }
+
+        // Escuchar mensajes emitidos por el servidor
+        socket.on('mensaje', (data) => {
+            const messagesContainer = document.getElementById('messages');
+            const { username, mensaje, timestamp } = data;
+
+            // Agregar mensaje a la vista
+            messagesContainer.innerHTML += `<div><strong>${username}</strong> [${timestamp}]: ${mensaje}</div>`;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; // Desplazar hacia abajo
+
+            // Mostrar la notificación si el chat está cerrado
+            const chatSection = document.getElementById('chatSection');
+            if (chatSection.style.display === 'none') {
+                showNotificationDot();
+            }
+        });
+
+        // Agregar evento para enviar mensaje con la tecla Enter
+        document.getElementById('chatInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Función para alternar la visibilidad del chat
+        function toggleChat() {
+            const chatSection = document.getElementById('chatSection');
+            const notificationDot = document.getElementById('notificationDot');
+
+            // Alterna la visibilidad del chat
+            if (chatSection.style.display === 'block') {
+                chatSection.style.display = 'none';
+                hideNotificationDot(); // Esconde el punto rojo cuando el chat se cierra
+            } else {
+                chatSection.style.display = 'block';
+                hideNotificationDot(); // Esconde el punto rojo al abrir el chat (en caso de haberlo)
+            }
+
+            // Limpiar la notificación al abrir el chat
+            localStorage.removeItem('newMessageNotification');
+        }    
+
+        // Mostrar la notificación
+        function showNotificationDot() {
+            document.getElementById('notificationDot').style.display = 'block';
+            localStorage.setItem('newMessageNotification', 'true'); // Guardar que hay una notificación pendiente
+        }
+
+        // Ocultar la notificación
+        function hideNotificationDot() {
+            document.getElementById('notificationDot').style.display = 'none';
+            localStorage.removeItem('newMessageNotification'); // Eliminar la notificación al abrir el chat
+        }
+    </script>
+</body>
+</html>

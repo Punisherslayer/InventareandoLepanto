@@ -1,0 +1,20 @@
+# Ignorar archivo de entorno
+.env
+
+# Ignorar archivos de logs
+*.log
+
+# Ignorar configuraciones de VSCode
+.vscode/
+
+# Ignorar archivos generados por el sistema operativo
+.DS_Store
+Thumbs.db
+
+# Ignorar archivos SQL de base de datos (la carpeta sql hay que crearla en public)
+*.sql
+
+# Ignorar archivos Excel de datos (la carpeta uploads hay que crearla en raiz)
+*.csv
+*.xls
+*.xlsx

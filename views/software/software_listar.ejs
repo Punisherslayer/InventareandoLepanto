@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Listar Software</title>
+    <link rel="stylesheet" href="/css/listar.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <h1>Lista de Software</h1>
+
+    <% if (messages.error_msg) { %> 
+        <div class="alert alert-danger"><%= messages.error_msg %></div>
+    <% } %>
+    <% if (messages.success_msg) { %> 
+        <div class="alert alert-success"><%= messages.success_msg %></div>
+    <% } %>
+
+    <!-- Filtros -->
+    <form action="/software/listar" method="GET">
+        <label for="fecha_vencimiento">Fecha de Vencimiento:</label>
+        <input type="date" name="fecha_vencimiento" value="<%= fecha_vencimiento %>">
+
+        <label for="fecha_creacion">Fecha de Creación:</label>
+        <input type="date" name="fecha_creacion" value="<%= fecha_creacion %>">
+
+        <label for="fecha_modificacion">Fecha de Modificación:</label>
+        <input type="date" name="fecha_modificacion" value="<%= fecha_modificacion %>">
+
+        <button type="submit">Filtrar</button>
+    </form>
+
+    <!-- Tabla de Software -->
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Versión</th>
+                <th>Fecha de Vencimiento</th>
+                <th>Detalles de Licencia</th>
+                <th>Fecha de Creación</th>
+                <th>Fecha de Modificación</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% software.forEach(function(sw) { %>
+            <tr>
+                <td><%= sw.id_software %></td>
+                <td><%= sw.nombre %></td>
+                <td><%= sw.version %></td>
+                <td><%= new Date(sw.fecha_vencimiento).toLocaleString('es-ES', { timeZone: 'UTC', hour12: false }) %></td>
+                <td><%= sw.detalles_licencia %></td>
+                <td><%= new Date(sw.fecha_creacion).toLocaleString('es-ES', { timeZone: 'UTC', hour12: false }) %></td>
+                <td><%= new Date(sw.fecha_modificacion).toLocaleString('es-ES', { timeZone: 'UTC', hour12: false }) %></td>                
+                <td>
+                    <form action="/software/eliminar/<%= sw.id_software %>" method="POST" style="display:inline;">
+                        <button type="submit">Eliminar</button>
+                    </form>
+                    <a href="/software/actualizar/<%= sw.id_software %>"><button>Actualizar</button></a>
+                </td>
+            </tr>
+            <% }); %>
+        </tbody>
+    </table>
+    <button class="button-rdc" onclick="window.location.href='/software/alta'">Dar de alta Software</button>
+    <button class="button-rdc" onclick="window.location.href='/ubicaciones/listar'">Volver a Lista de Ubicaciones</button>
+
+        <!-- Sección de chat -->
+        <section id="chatSection" style="display: none;">
+            <h3>LepantoChat</h3>
+            <div id="chatContainer">
+                <div id="messages" style="height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
+                <% if (user.rol === 'tecnico' || user.rol === 'admin') { %>
+                    <input type="text" id="chatInput" placeholder="Escribe tu mensaje aquí..." />
+                    <button onclick="sendMessage()">Enviar</button>
+                <% } else { %>
+                    <input type="text" id="chatInput" placeholder="No tienes permiso para enviar mensajes." disabled />
+                <% } %>
+            </div>
+        </section>
+        
+        <!-- Botón para abrir/cerrar el chat -->
+        <% if (user.rol === 'tecnico' || user.rol === 'admin') { %>
+            <button class="chat-toggle-button" onclick="toggleChat()">💬
+                <span class="notification-dot" id="notificationDot"></span>
+            </button>
+        <% } %>
+    
+    <script>
+        const userName = "<%= user.username %>";
+        const userId = "<%= user.id %>";
+
+        // Conexión a Socket.IO
+        const socket = io();
+
+        // Verificar si hay una notificación pendiente al cargar la página
+        if (localStorage.getItem('newMessageNotification') === 'true') {
+            document.getElementById('notificationDot').style.display = 'block';
+        }
+
+        // Escuchar el historial de mensajes al cargar la página
+        socket.on('cargar-mensajes', (mensajes) => {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = ""; // Limpiar mensajes previos
+
+            mensajes.forEach((msg) => {
+                const { username, mensaje, fecha } = msg;
+                messagesContainer.innerHTML += `<div><strong>${username}</strong> [${new Date(fecha).toLocaleString()}]: ${mensaje}</div>`;
+            });
+
+            // Desplazar hacia abajo para mostrar los mensajes más recientes
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
+
+        // Función para enviar un mensaje
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (message) {
+                const msg = {
+                    userId: userId,
+                    mensaje: message,
+                    username: userName
+                };
+
+                // Emitir el mensaje al servidor
+                socket.emit('mensaje', msg);
+
+                // Limpiar el campo de entrada
+                input.value = '';
+            }
+        }
+
+        // Escuchar mensajes emitidos por el servidor
+        socket.on('mensaje', (data) => {
+            const messagesContainer = document.getElementById('messages');
+            const { username, mensaje, timestamp } = data;
+
+            // Agregar mensaje a la vista
+            messagesContainer.innerHTML += `<div><strong>${username}</strong> [${timestamp}]: ${mensaje}</div>`;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; // Desplazar hacia abajo
+
+            // Mostrar la notificación si el chat está cerrado
+            const chatSection = document.getElementById('chatSection');
+            if (chatSection.style.display === 'none') {
+                showNotificationDot();
+            }
+        });
+
+        // Agregar evento para enviar mensaje con la tecla Enter
+        document.getElementById('chatInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Función para alternar la visibilidad del chat
+        function toggleChat() {
+            const chatSection = document.getElementById('chatSection');
+            const notificationDot = document.getElementById('notificationDot');
+
+            // Alterna la visibilidad del chat
+            if (chatSection.style.display === 'block') {
+                chatSection.style.display = 'none';
+                hideNotificationDot(); // Esconde el punto rojo cuando el chat se cierra
+            } else {
+                chatSection.style.display = 'block';
+                hideNotificationDot(); // Esconde el punto rojo al abrir el chat (en caso de haberlo)
+            }
+
+            // Limpiar la notificación al abrir el chat
+            localStorage.removeItem('newMessageNotification');
+        }    
+
+        // Mostrar la notificación
+        function showNotificationDot() {
+            document.getElementById('notificationDot').style.display = 'block';
+            localStorage.setItem('newMessageNotification', 'true'); // Guardar que hay una notificación pendiente
+        }
+
+        // Ocultar la notificación
+        function hideNotificationDot() {
+            document.getElementById('notificationDot').style.display = 'none';
+            localStorage.removeItem('newMessageNotification'); // Eliminar la notificación al abrir el chat
+        }
+    </script>
+</body>
+</html>

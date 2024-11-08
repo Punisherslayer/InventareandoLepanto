@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dar de Alta Equipos</title>
+    <link rel="stylesheet" href="/css/alta.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+    <h1>Dar de Alta Equipos</h1>
+
+    <% if (messages.error_msg) { %> 
+        <div class="alert alert-danger"><%= messages.error_msg %></div>
+    <% } %>
+    <% if (messages.success_msg) { %> 
+        <div class="alert alert-success"><%= messages.success_msg %></div>
+    <% } %>
+    
+    <form action="/equipos/alta" method="POST">
+        <label for="tipo">Tipo:</label>
+        <select name="tipo" required>
+            <option value="">Seleccione un Tipo de Equipo</option>
+            <option value="PC">PC</option>
+            <option value="Laptop">Laptop</option>
+            <option value="Impresora">Impresora</option>
+            <option value="Otro">Otro</option>
+        </select>
+        
+        <label for="marca">Marca:</label>
+        <input type="text" name="marca" required>
+
+        <label for="modelo">Modelo:</label>
+        <input type="text" name="modelo" required>
+
+        <label for="sistema_operativo">Sistema Operativo:</label>
+        <select name="sistema_operativo" required>
+            <option value="">Seleccione un sistema operativo</option>
+            <option value="Windows">Windows</option>
+            <option value="Linux">Linux</option>
+            <option value="macOS">macOS</option>
+            <option value="Otro">Otro</option>
+        </select>
+
+        <label for="placa_base">Placa Base:</label>
+        <input type="text" name="placa_base" required>
+
+        <label for="procesador">Procesador:</label>
+        <input type="text" name="procesador" required>
+
+        <label for="memoria_ram">Memoria RAM:</label>
+        <input type="text" name="memoria_ram" required>
+
+        <label for="disco_duro">Disco Duro:</label>
+        <input type="text" name="disco_duro" required>
+
+        <label for="tarjeta_grafica">Tarjeta Gráfica:</label>
+        <input type="text" name="tarjeta_grafica" required>
+
+        <label for="cables_conectores">Cables/Conectores:</label>
+        <input type="text" name="cables_conectores" required>
+
+        <label for="sistema_refrigeracion">¿Sistema de Refrigeración?</label>
+        <select name="sistema_refrigeracion" required>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+        </select>
+        
+        <label for="unidad_optica">¿Unidad Óptica?</label>
+        <select name="unidad_optica" required>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+        </select>
+        
+        <label for="tarjeta_sonido">¿Tarjeta de Sonido?</label>
+        <select name="tarjeta_sonido" required>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+        </select>
+
+        <label for="tarjeta_red">¿Tarjeta de Red?</label>
+        <select name="tarjeta_red" required>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+        </select>
+        
+        <label for="teclado">¿Teclado?</label>
+        <select name="teclado" required>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+        </select>
+        
+        <label for="raton">¿Ratón?</label>
+        <select name="raton" required>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+        </select>
+        
+        <label for="monitor">¿Monitor?</label>
+        <select name="monitor" required>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+        </select>
+        
+        <label for="altavoces">¿Altavoces?</label>
+        <select name="altavoces" required>
+            <option value="si">Sí</option>
+            <option value="no">No</option>
+        </select>
+
+        <label for="estado">Estado:</label>
+        <select name="estado" required>
+            <option value="">Seleccione el Estado del Equipo</option>
+            <option value="activo">Activo</option>
+            <option value="en reparación">En reparación</option>
+            <option value="obsoleto">Obsoleto</option>
+        </select>
+                
+        <label for="id_ubicacion">Ubicación:</label>
+        <select name="id_ubicacion" required>
+            <option value="">Seleccione una Ubicación</option>
+            <% ubicaciones.forEach(function(ubicacion) { %>
+                <option value="<%= ubicacion.id_ubicacion %>"><%= ubicacion.nombre_ubicacion %></option>
+            <% }); %>
+        </select>
+        
+        <button type="submit">Registrar Equipo</button>
+        <button class="button-rdc" onclick="window.location.href='/ubicaciones/listar'">Cancelar</button>
+    </form>
+
+        <!-- Sección de chat -->
+        <section id="chatSection" style="display: none;">
+            <h3>LepantoChat</h3>
+            <div id="chatContainer">
+                <div id="messages" style="height: 200px; overflow-y: auto; border: 1px solid #ccc; padding: 10px;"></div>
+                <% if (user.rol === 'tecnico' || user.rol === 'admin') { %>
+                    <input type="text" id="chatInput" placeholder="Escribe tu mensaje aquí..." />
+                    <button onclick="sendMessage()">Enviar</button>
+                <% } else { %>
+                    <input type="text" id="chatInput" placeholder="No tienes permiso para enviar mensajes." disabled />
+                <% } %>
+            </div>
+        </section>
+        
+        <!-- Botón para abrir/cerrar el chat -->
+        <% if (user.rol === 'tecnico' || user.rol === 'admin') { %>
+            <button class="chat-toggle-button" onclick="toggleChat()">💬
+                <span class="notification-dot" id="notificationDot"></span>
+            </button>
+        <% } %>
+
+    <script>
+        const userName = "<%= user.username %>";
+        const userId = "<%= user.id %>";
+
+        // Conexión a Socket.IO
+        const socket = io();
+
+        // Verificar si hay una notificación pendiente al cargar la página
+        if (localStorage.getItem('newMessageNotification') === 'true') {
+            document.getElementById('notificationDot').style.display = 'block';
+        }
+
+        // Escuchar el historial de mensajes al cargar la página
+        socket.on('cargar-mensajes', (mensajes) => {
+            const messagesContainer = document.getElementById('messages');
+            messagesContainer.innerHTML = ""; // Limpiar mensajes previos
+
+            mensajes.forEach((msg) => {
+                const { username, mensaje, fecha } = msg;
+                messagesContainer.innerHTML += `<div><strong>${username}</strong> [${new Date(fecha).toLocaleString()}]: ${mensaje}</div>`;
+            });
+
+            // Desplazar hacia abajo para mostrar los mensajes más recientes
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        });
+
+        // Función para enviar un mensaje
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (message) {
+                const msg = {
+                    userId: userId,
+                    mensaje: message,
+                    username: userName
+                };
+
+                // Emitir el mensaje al servidor
+                socket.emit('mensaje', msg);
+
+                // Limpiar el campo de entrada
+                input.value = '';
+            }
+        }
+
+        // Escuchar mensajes emitidos por el servidor
+        socket.on('mensaje', (data) => {
+            const messagesContainer = document.getElementById('messages');
+            const { username, mensaje, timestamp } = data;
+
+            // Agregar mensaje a la vista
+            messagesContainer.innerHTML += `<div><strong>${username}</strong> [${timestamp}]: ${mensaje}</div>`;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; // Desplazar hacia abajo
+
+            // Mostrar la notificación si el chat está cerrado
+            const chatSection = document.getElementById('chatSection');
+            if (chatSection.style.display === 'none') {
+                showNotificationDot();
+            }
+        });
+
+        // Agregar evento para enviar mensaje con la tecla Enter
+        document.getElementById('chatInput').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Función para alternar la visibilidad del chat
+        function toggleChat() {
+            const chatSection = document.getElementById('chatSection');
+            const notificationDot = document.getElementById('notificationDot');
+
+            // Alterna la visibilidad del chat
+            if (chatSection.style.display === 'block') {
+                chatSection.style.display = 'none';
+                hideNotificationDot(); // Esconde el punto rojo cuando el chat se cierra
+            } else {
+                chatSection.style.display = 'block';
+                hideNotificationDot(); // Esconde el punto rojo al abrir el chat (en caso de haberlo)
+            }
+
+            // Limpiar la notificación al abrir el chat
+            localStorage.removeItem('newMessageNotification');
+        }    
+
+        // Mostrar la notificación
+        function showNotificationDot() {
+            document.getElementById('notificationDot').style.display = 'block';
+            localStorage.setItem('newMessageNotification', 'true'); // Guardar que hay una notificación pendiente
+        }
+
+        // Ocultar la notificación
+        function hideNotificationDot() {
+            document.getElementById('notificationDot').style.display = 'none';
+            localStorage.removeItem('newMessageNotification'); // Eliminar la notificación al abrir el chat
+        }
+    </script>
+</body>
+</html>
