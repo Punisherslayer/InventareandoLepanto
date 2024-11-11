@@ -854,7 +854,6 @@ app.post('/mantenimiento_equipos/alta', authMiddleware, roleMiddleware(['admin',
 
         // Actualizar estado de la incidencia de equipos
         let nuevoEstado;
-
         switch (estado) {
             case 'completado':
                 nuevoEstado = 'cerrada';
@@ -870,6 +869,19 @@ app.post('/mantenimiento_equipos/alta', authMiddleware, roleMiddleware(['admin',
         }
 
         await query('UPDATE Incidencias SET estado = ? WHERE id_equipo = ?', [nuevoEstado, id_equipo]);
+
+        // Actualizar el estado del equipo basado en el estado del mantenimiento
+        let nuevoEstadoEquipo;
+        if (estado === 'pendiente') {
+            nuevoEstadoEquipo = 'en reparación';
+        } else if (estado === 'completado') {
+            nuevoEstadoEquipo = 'activo';
+        }
+
+        // Actualizar el estado del equipo en la base de datos si es necesario
+        if (nuevoEstadoEquipo) {
+            await query('UPDATE Equipos SET estado = ? WHERE id_equipo = ?', [nuevoEstadoEquipo, id_equipo]);
+        }
 
         // Redirigir o responder según corresponda de equipos
         res.redirect('/mantenimiento_equipos/listar');
@@ -956,7 +968,6 @@ app.post('/mantenimiento_equipos/actualizar/:id_mantenimiento', authMiddleware, 
 
         // Actualizar estado de la incidencia de equipos
         let nuevoEstado;
-
         switch (estado) {
             case 'completado':
                 nuevoEstado = 'cerrada';
@@ -972,6 +983,19 @@ app.post('/mantenimiento_equipos/actualizar/:id_mantenimiento', authMiddleware, 
         }
 
         await query('UPDATE Incidencias SET estado = ? WHERE id_equipo = ?', [nuevoEstado, id_equipo]);
+
+        // Actualizar el estado del equipo basado en el estado del mantenimiento
+        let nuevoEstadoEquipo;
+        if (estado === 'pendiente') {
+            nuevoEstadoEquipo = 'en reparación';
+        } else if (estado === 'completado') {
+            nuevoEstadoEquipo = 'activo';
+        }
+
+        // Actualizar el estado del equipo en la base de datos si es necesario
+        if (nuevoEstadoEquipo) {
+            await query('UPDATE Equipos SET estado = ? WHERE id_equipo = ?', [nuevoEstadoEquipo, id_equipo]);
+        }
 
         // Redirigir a la lista de mantenimiento de equipos
         res.redirect('/mantenimiento_equipos/listar');
@@ -1227,7 +1251,6 @@ app.post('/mantenimiento_hardware/alta', authMiddleware, roleMiddleware(['admin'
 
         // Actualizar estado de la incidencia de hardware
         let nuevoEstado;
-
         switch (estado) {
             case 'completado':
                 nuevoEstado = 'cerrada';
@@ -1243,6 +1266,19 @@ app.post('/mantenimiento_hardware/alta', authMiddleware, roleMiddleware(['admin'
         }
 
         await query('UPDATE Incidencias SET estado = ? WHERE id_hardware = ?', [nuevoEstado, id_hardware]);
+
+        // Actualizar el estado del hardware basado en el estado del mantenimiento
+        let nuevoEstadoHardware;
+        if (estado === 'pendiente') {
+            nuevoEstadoHardware = 'en reparación';
+        } else if (estado === 'completado') {
+            nuevoEstadoHardware = 'en uso';
+        }
+
+        // Actualizar el estado del hardware en la base de datos si es necesario
+        if (nuevoEstadoHardware) {
+            await query('UPDATE Hardware SET estado = ? WHERE id_hardware = ?', [nuevoEstadoHardware, id_hardware]);
+        }
 
         // Redirigir o responder según corresponda de hardware
         res.redirect('/mantenimiento_hardware/listar');
@@ -1343,6 +1379,19 @@ app.post('/mantenimiento_hardware/actualizar/:id_mantenimiento', authMiddleware,
         }
 
         await query('UPDATE Incidencias SET estado = ? WHERE id_hardware = ?', [nuevoEstado, id_hardware]);
+
+                // Actualizar el estado del hardware basado en el estado del mantenimiento
+                let nuevoEstadoHardware;
+                if (estado === 'pendiente') {
+                    nuevoEstadoHardware = 'en reparación';
+                } else if (estado === 'completado') {
+                    nuevoEstadoHardware = 'en uso';
+                }
+        
+                // Actualizar el estado del hardware en la base de datos si es necesario
+                if (nuevoEstadoHardware) {
+                    await query('UPDATE Hardware SET estado = ? WHERE id_hardware = ?', [nuevoEstadoHardware, id_hardware]);
+                }
 
         // Redirigir a la lista de mantenimiento de hardware
         res.redirect('/mantenimiento_hardware/listar');
