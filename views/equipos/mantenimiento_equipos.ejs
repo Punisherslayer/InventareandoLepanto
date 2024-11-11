@@ -44,13 +44,6 @@
             <option value="">Seleccione un equipo</option>
         </select>
         
-        <label for="id_usuario">Usuario:</label>
-        <select name="id_usuario" required>
-            <% usuarios.forEach(usuario => { %>
-                <option value="<%= usuario.id %>"><%= usuario.username %></option>
-            <% }) %>
-        </select> 
-
         <label for="estado">Estado:</label>
         <select name="estado" required>
             <option value="">Seleccione el Estado del Mantenimiento</option>
@@ -58,6 +51,11 @@
             <option value="completado">Completado</option>
             <option value="cancelado">Cancelado</option>
         </select>
+
+        <input type="hidden" name="id_usuario" value="<%= user.id %>">
+
+        <label for="usuario">Usuario:</label>
+        <input type="text" value="<%= user.username %>" readonly>
         
         <button type="submit">Registrar Mantenimiento</button>
         <button class="button-rdc" onclick="window.location.href='/ubicaciones/listar'">Cancelar</button>

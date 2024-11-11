@@ -38,13 +38,6 @@
             <% }) %>
         </select>
 
-        <label for="id_usuario">Usuario:</label>
-        <select name="id_usuario" required>
-            <% usuarios.forEach(usuario => { %>
-                <option value="<%= usuario.id %>"><%= usuario.username %></option>
-            <% }) %>
-        </select> 
-
         <label for="id_ubicacion">Ubicación:</label>
         <select name="id_ubicacion" required>
             <% ubicaciones.forEach(ubicacion => { %>
@@ -59,6 +52,11 @@
             <option value="completado" <%= mantenimiento.estado === 'completado' ? 'selected' : '' %>>Completado</option>
             <option value="cancelado" <%= mantenimiento.estado === 'cancelado' ? 'selected' : '' %>>Cancelado</option>
         </select>
+
+        <input type="hidden" name="id_usuario" value="<%= user.id %>">
+
+        <label for="usuario">Usuario:</label>
+        <input type="text" value="<%= user.username %>" readonly>
 
         <button type="submit">Actualizar Mantenimiento</button>
         <button class="button-rdc" onclick="window.location.href='/ubicaciones/listar'">Cancelar</button>
