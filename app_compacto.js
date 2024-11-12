@@ -570,37 +570,15 @@ app.post('/software/alta', authMiddleware, roleMiddleware(['admin', 'tecnico']),
     });
 });
 
-// Rutas para listar software con filtros
+// Ruta para listar software sin filtros
 app.get('/software/listar', authMiddleware, roleMiddleware(['admin', 'tecnico']), (req, res) => {
-    let { fecha_vencimiento, fecha_creacion, fecha_modificacion } = req.query;
-    let whereConditions = [];
-
-    // Generar condiciones de filtro si se proporcionan
-    if (fecha_vencimiento) {
-        whereConditions.push(`fecha_vencimiento = '${fecha_vencimiento}'`);
-    }
-    if (fecha_creacion) {
-        whereConditions.push(`fecha_creacion = '${fecha_creacion}'`);
-    }
-    if (fecha_modificacion) {
-        whereConditions.push(`fecha_modificacion = '${fecha_modificacion}'`);
-    }
-
-    // Construir la consulta SQL con las condiciones de filtro
-    let query = 'SELECT * FROM Software';
-    if (whereConditions.length > 0) {
-        query += ' WHERE ' + whereConditions.join(' AND ');
-    }
+    const query = 'SELECT * FROM Software';
 
     db.query(query, (err, results) => {
         if (err) throw err;
         const user = req.session.user;
-        // Pasar los valores de los filtros a la vista
         res.render('software/software_listar', { 
             software: results,
-            fecha_vencimiento: fecha_vencimiento || '',
-            fecha_creacion: fecha_creacion || '',
-            fecha_modificacion: fecha_modificacion || '',
             user
         });
     });
@@ -1577,7 +1555,7 @@ app.get('/ubicaciones/:id/equipos', authMiddleware, roleMiddleware(['admin', 'te
 // Usuarios
 // ==========================
 
-// Rutas para dar de alta usuarios
+// Ruta para dar de alta usuarios
 app.get('/usuarios/alta', authMiddleware, roleMiddleware(['admin']), (req, res) => {
     const user = req.session.user;
     res.render('usuarios/usuarios', { user });
@@ -1585,10 +1563,102 @@ app.get('/usuarios/alta', authMiddleware, roleMiddleware(['admin']), (req, res) 
 
 app.post('/usuarios/alta', authMiddleware, roleMiddleware(['admin']), (req, res) => {
     const { username, email, password, rol } = req.body;
+
+    // Verificación de dominio de correo
+    const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@educa\.madrid\.org$/;
+    if (!eduEmailRegex.test(email)) {
+        req.flash('error_msg', 'El correo debe ser de dominio @educa.madrid.org');
+        return res.redirect('/usuarios/alta');
+    }
+
     db.query('INSERT INTO Usuarios (username, email, password, rol) VALUES (?, ?, ?, ?)', [username, email, password, rol], (err, results) => {
         if (err) throw err;
         res.redirect('/usuarios/listar');
     });
+});
+
+// Configuración de almacenamiento con multer
+const storageUsuarios = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const uploadUsuarios = multer({ storage: storageUsuarios });
+
+// Ruta para cargar archivos
+app.post('/usuarios/upload', authMiddleware, roleMiddleware(['admin']), uploadUsuarios.single('file'), (req, res) => {
+    const file = req.file;
+
+    if (!file) {
+        req.flash('error_msg', 'No se ha subido ningún archivo');
+        return res.redirect('/usuarios/listar');
+    }
+
+    const fileExtension = file.mimetype.split('/')[1];
+    const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@educa\.madrid\.org$/;
+
+    // Procesar archivo CSV
+    if (fileExtension === 'csv') {
+        const usuarios = [];
+        fs.createReadStream(file.path)
+            .pipe(csv())
+            .on('data', (row) => {
+                // Validar correo antes de agregarlo a la lista
+                if (eduEmailRegex.test(row.email)) {
+                    usuarios.push(row);
+                }
+            })
+            .on('end', () => {
+                // Insertar Usuarios en la base de datos
+                usuarios.forEach(usuario => {
+                    const { username, email, password, rol } = usuario;
+                    db.query(
+                        'INSERT INTO Usuarios (username, email, password, rol) VALUES (?, ?, ?, ?)',
+                        [username, email, password, rol],
+                        (err, results) => {
+                            if (err) {
+                                console.error('Error al insertar usuarios:', err);
+                            }
+                        }
+                    );
+                });
+                req.flash('success_msg', 'Usuarios cargados exitosamente');
+                res.redirect('/usuarios/listar');
+            });
+    }
+
+    // Procesar archivo Excel
+    else if (fileExtension === 'spreadsheetml') {
+        const workbook = xlsx.readFile(file.path);
+        const sheet_name_list = workbook.SheetNames;
+        const usuarios = xlsx.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
+
+        usuarios.forEach(usuario => {
+            const { username, email, password, rol } = usuario;
+            
+            // Validar el dominio del correo antes de insertar
+            if (eduEmailRegex.test(email)) {
+                db.query(
+                    'INSERT INTO Usuarios (username, email, password, rol) VALUES (?, ?, ?, ?)',
+                    [username, email, password, rol],
+                    (err, results) => {
+                        if (err) {
+                            console.error('Error al insertar usuarios:', err);
+                        }
+                    }
+                );
+            }
+        });
+        req.flash('success_msg', 'Usuarios cargados exitosamente');
+        res.redirect('/usuarios/listar');
+    } else {
+        req.flash('error_msg', 'Formato de archivo no soportado');
+        return res.redirect('/usuarios/listar');
+    }
 });
 
 // Rutas para listar usuarios
@@ -1614,6 +1684,14 @@ app.get('/usuarios/actualizar/:id', authMiddleware, roleMiddleware(['admin']), (
 app.post('/usuarios/actualizar/:id', authMiddleware, roleMiddleware(['admin']), (req, res) => {
     const { username, email, rol } = req.body;
     const { id } = req.params;
+    const eduEmailRegex = /^[a-zA-Z0-9._%+-]+@educa\.madrid\.org$/;
+
+    // Validar el dominio del correo antes de actualizar
+    if (!eduEmailRegex.test(email)) {
+        req.flash('error_msg', 'El correo debe ser de dominio @educa.madrid.org');
+        return res.redirect(`/usuarios/actualizar/${id}`);
+    }
+
     db.query(
         'UPDATE Usuarios SET username = ?, email = ?, rol = ? WHERE id = ?',
         [username, email, rol, id],

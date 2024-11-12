@@ -6,6 +6,61 @@
     <title>Listado de Mantenimientos de Hardware</title>
     <link rel="stylesheet" href="/css/listar.css">
     <script src="/socket.io/socket.io.js"></script>
+
+    <style>
+        /* CSS para el formulario desplegable de filtros */
+        .filtros-container {
+            position: relative;
+        }
+
+        .filtros-btn {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .filtros-btn:hover {
+            background-color: #0056b3;
+        }
+
+        .filtros-form {
+            display: none;
+            background-color: #f8f9fa;
+            border: 1px solid #ccc;
+            padding: 20px;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+
+        .filtros-form label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .filtros-form select, .filtros-form input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+
+        .filtros-form button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .filtros-form button:hover {
+            background-color: #0056b3;
+        }
+
+    </style>
 </head>
 <body>
     <h1>Lista de Mantenimiento de Hardware</h1>
@@ -17,8 +72,10 @@
         <div class="alert alert-success"><%= messages.success_msg %></div>
     <% } %>
     
-    <!-- Filtros -->
-    <form action="/mantenimiento_hardware/listar" method="GET">
+<!-- Filtros -->
+<div class="filtros-container">
+    <button class="filtros-btn">Filtros</button>
+    <form class="filtros-form" action="/mantenimiento_hardware/listar" method="GET">
         <label for="tipo">Tipo:</label>
         <select name="tipo" id="tipo">
             <option value="">Seleccione un Tipo de Mantenimiento</option>
@@ -32,7 +89,7 @@
         <label for="id_ubicacion">Ubicación:</label>
         <select name="id_ubicacion" id="id_ubicacion">
             <option value="">Seleccione una Ubicación</option>
-            <% ubicaciones.forEach(ubicacion => { %>
+            <% ubicaciones.forEach(function(ubicacion) { %>
                 <option value="<%= ubicacion.id_ubicacion %>"><%= ubicacion.nombre_ubicacion %></option>
             <% }) %>
         </select>
@@ -53,6 +110,7 @@
 
         <button type="submit">Filtrar</button>
     </form>
+</div>
 
     <!-- Tabla Mantenimiento Hardware -->
     <table>
@@ -225,6 +283,17 @@
             document.getElementById('notificationDot').style.display = 'none';
             localStorage.removeItem('newMessageNotification'); // Eliminar la notificación al abrir el chat
         }
+
+        document.querySelector('.filtros-btn').addEventListener('click', function() {
+        const filtrosForm = document.querySelector('.filtros-form');
+        
+        // Alternar visibilidad del formulario de filtros
+        if (filtrosForm.style.display === 'none' || filtrosForm.style.display === '') {
+            filtrosForm.style.display = 'block';
+        } else {
+            filtrosForm.style.display = 'none';
+        }
+    });
     </script>
 </body>
 </html>

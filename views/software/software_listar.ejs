@@ -17,20 +17,6 @@
         <div class="alert alert-success"><%= messages.success_msg %></div>
     <% } %>
 
-    <!-- Filtros -->
-    <form action="/software/listar" method="GET">
-        <label for="fecha_vencimiento">Fecha de Vencimiento:</label>
-        <input type="date" name="fecha_vencimiento" value="<%= fecha_vencimiento %>">
-
-        <label for="fecha_creacion">Fecha de Creación:</label>
-        <input type="date" name="fecha_creacion" value="<%= fecha_creacion %>">
-
-        <label for="fecha_modificacion">Fecha de Modificación:</label>
-        <input type="date" name="fecha_modificacion" value="<%= fecha_modificacion %>">
-
-        <button type="submit">Filtrar</button>
-    </form>
-
     <!-- Tabla de Software -->
     <table>
         <thead>
@@ -187,6 +173,7 @@
             document.getElementById('notificationDot').style.display = 'none';
             localStorage.removeItem('newMessageNotification'); // Eliminar la notificación al abrir el chat
         }
+
     </script>
 </body>
 </html>
