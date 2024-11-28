@@ -106,6 +106,11 @@ Este proyecto está bajo la licencia MIT. Para más detalles, consulta el archiv
 
 - **Modificaciones Futuras:** Está planificado mejorar la interfaz móvil, optimizar la carga de grandes cantidades de datos y añadir nuevas funcionalidades, ademas de añadir nuevas secciones para otros modulos del centro.
 
+## ACTUALIZACIÓN 28/11/2024
+
+- **Mejoras Realizadas:** Se ha mejorado la mensajería instantánea con **notificaciones**, se ha mejorado el **diseño** de los botones de filtrado, se añadió **ngrok** para la conexión de la aplicación a internet de forma temporal al iniciar la aplicación, y se ha añadido subida de fichero csv/xls en la sección de **usuarios**.
+
+- **Nota sobre ngrok:** Se implementó **ngrok** para la conexión de la aplicación a internet de forma temporal al iniciar la aplicación. Si no se quiere utilizar ngrok, se debe comentar/eliminar las líneas **16, 1720 y 1726** del archivo `app_compacto.js`. Si se quiere desinstalar el módulo, usa el comando **npm uninstall ngrok**. En caso de que se quiera utilizar ngrok, se debe crear una cuenta en **ngrok.com** y generar un token de acceso.
 
 # Inventory Management - IES Ntra. Sra. de la Victoria de Lepanto in english
 
@@ -213,3 +218,9 @@ This project is licensed under the MIT license. For more details, see the `LICEN
 - **Dependencies and Modules:** This project uses popular Node.js modules such as express, mysql2, multer, and xlsx, among others. It is important to ensure that all dependencies are correctly installed and updated for optimal application performance.
 
 - **Future Modifications:** Plans include improving the mobile interface, optimizing the loading of large data sets, and adding new functionalities, as well as adding new sections for other modules within the center.
+
+## UPDATE 11/28/2024
+
+- **Improvements Made:** Instant messaging with **notifications** has been improved, the **design** of the filter buttons has been enhanced, **ngrok** has been added for temporarily connecting the application to the internet upon startup, and the upload of csv/xls files has been added in the **users** section.
+
+- **Note about ngrok:** **Ngrok** has been implemented to temporarily connect the application to the internet upon startup. If you do not want to use ngrok, you should comment out/delete lines **16, 1720, and 1726** in the `app_compacto.js` file. If you wish to uninstall the module, use the command **npm uninstall ngrok**. To use ngrok, you need to create an account on **ngrok.com** and generate an access token.

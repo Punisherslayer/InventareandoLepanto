@@ -13,11 +13,13 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const http = require('http');
 const socketIO = require('socket.io');
+const ngrok = require('ngrok');
 const port = 3000;
 
 // Configuración de la base de datos
 const db = mysql.createConnection({
     host: process.env.DB_HOST,
+    port: process.env.DB_PORT,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME
@@ -1712,6 +1714,14 @@ app.post('/usuarios/eliminar/:id', authMiddleware, roleMiddleware(['admin']), (r
 });
 
 // Inicia el servidor HTTP
-server.listen(port, () => {
+server.listen(port, async () => {
     console.log(`Servidor escuchando en el puerto ${port}`);
+
+    try {
+        // Conecta ngrok al puerto
+        const url = await ngrok.connect(port);
+        console.log(`Servidor expuesto en: ${url}`);
+    } catch (error) {
+        console.error("Error al conectar con ngrok:", error);
+    }
 });
