@@ -311,7 +311,6 @@
                             <th>Monitor</th>
                             <th>Altavoces</th>
                             <th>Cables y Conectores</th>
-                            <th>Estado</th>
                             <th>Acciones</th>
                         </tr>`;
                         table.innerHTML = headerRow;
@@ -338,7 +337,6 @@
                                 <td>${equipo.monitor}</td>
                                 <td>${equipo.altavoces}</td>
                                 <td>${equipo.cables_conectores}</td>
-                                <td>${equipo.estado}</td>
                                 <td>
                                     <a href="/equipos/actualizar/${equipo.id_equipo}"><button>Actualizar</button></a>
                                     <a href="/incidencias_equipos/alta?equipo_id=${equipo.id_equipo}"><button>Abrir Incidencia</button></a>

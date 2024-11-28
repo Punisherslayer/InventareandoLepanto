@@ -458,6 +458,84 @@ app.post('/hardware/alta', authMiddleware, roleMiddleware(['admin', 'tecnico']),
     });
 });
 
+// Configuración de almacenamiento con multer
+const storageHardware = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const uploadHardware = multer({ storage: storageHardware });
+
+// Ruta para cargar archivos
+app.post('/hardware/upload', authMiddleware, roleMiddleware(['admin', 'tecnico']), uploadHardware.single('file'), (req, res) => {
+    const file = req.file;
+
+    if (!file) {
+        req.flash('error_msg', 'No se ha subido ningún archivo');
+        return res.redirect('/hardware/listar');
+    }
+
+    const fileExtension = file.mimetype.split('/')[1];
+
+    // Procesar archivo CSV
+    if (fileExtension === 'csv') {
+        const hardware = [];
+        fs.createReadStream(file.path)
+            .pipe(csv())
+            .on('data', (row) => {
+                hardware.push(row);
+            })
+            .on('end', () => {
+                // Insertar hardware en la base de datos
+                hardware.forEach(hardware => {
+                    const { tipo_componente, marca, modelo, especificaciones, estado, id_ubicacion } = hardware;
+
+                    db.query(
+                        'INSERT INTO Hardware (tipo_componente, marca, modelo, especificaciones, estado, id_ubicacion) VALUES (?, ?, ?, ?, ?, ?)',
+                        [tipo_componente, marca, modelo, especificaciones, estado, id_ubicacion],
+                        (err, results) => {
+                            if (err) {
+                                console.error('Error al insertar hardware:', err);
+                            }
+                        }
+                    );
+                });
+                req.flash('success_msg', 'Hardware cargados exitosamente');
+                res.redirect('/hardware/listar');
+            });
+    }
+
+    // Procesar archivo Excel
+    else if (fileExtension === 'spreadsheetml') {
+        const workbook = xlsx.readFile(file.path);
+        const sheet_name_list = workbook.SheetNames;
+        const hardware = xlsx.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
+
+        hardware.forEach(hardware => {
+            const { tipo_componente, marca, modelo, especificaciones, estado, id_ubicacion } = hardware;
+
+            db.query(
+                'INSERT INTO Hardware (tipo_componente, marca, modelo, especificaciones, estado, id_ubicacion) VALUES (?, ?, ?, ?, ?, ?)',
+                [tipo_componente, marca, modelo, especificaciones, estado, id_ubicacion],
+                (err, results) => {
+                    if (err) {
+                        console.error('Error al insertar hardware:', err);
+                    }
+                }
+            );
+        });
+        req.flash('success_msg', 'Hardware cargados exitosamente');
+        res.redirect('/hardware/listar');
+    } else {
+        req.flash('error_msg', 'Formato de archivo no soportado');
+        return res.redirect('/hardware/listar');
+    }
+});
+
 // Rutas para listar hardware con filtros
 app.get('/hardware/listar', authMiddleware, roleMiddleware(['admin', 'tecnico']), (req, res) => {
     const { tipo_componente, marca, estado, id_ubicacion, fecha_creacion, fecha_modificacion } = req.query;
@@ -570,6 +648,84 @@ app.post('/software/alta', authMiddleware, roleMiddleware(['admin', 'tecnico']),
         if (err) throw err;
         res.redirect('/software/listar');
     });
+});
+
+// Configuración de almacenamiento con multer
+const storageSoftware = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + '-' + file.originalname);
+    }
+});
+
+const uploadSoftware = multer({ storage: storageSoftware });
+
+// Ruta para cargar archivos
+app.post('/software/upload', authMiddleware, roleMiddleware(['admin', 'tecnico']), uploadSoftware.single('file'), (req, res) => {
+    const file = req.file;
+
+    if (!file) {
+        req.flash('error_msg', 'No se ha subido ningún archivo');
+        return res.redirect('/software/listar');
+    }
+
+    const fileExtension = file.mimetype.split('/')[1];
+
+    // Procesar archivo CSV
+    if (fileExtension === 'csv') {
+        const software = [];
+        fs.createReadStream(file.path)
+            .pipe(csv())
+            .on('data', (row) => {
+                software.push(row);
+            })
+            .on('end', () => {
+                // Insertar software en la base de datos
+                software.forEach(software => {
+                    const { nombre, version, fecha_vencimiento, detalles_licencia } = software;
+
+                    db.query(
+                        'INSERT INTO Software (nombre, version, fecha_vencimiento, detalles_licencia) VALUES (?, ?, ?, ?)',
+                        [nombre, version, fecha_vencimiento, detalles_licencia],
+                        (err, results) => {
+                            if (err) {
+                                console.error('Error al insertar software:', err);
+                            }
+                        }
+                    );
+                });
+                req.flash('success_msg', 'Software cargados exitosamente');
+                res.redirect('/software/listar');
+            });
+    }
+
+    // Procesar archivo Excel
+    else if (fileExtension === 'spreadsheetml') {
+        const workbook = xlsx.readFile(file.path);
+        const sheet_name_list = workbook.SheetNames;
+        const software = xlsx.utils.sheet_to_json(workbook.Sheets[sheet_name_list[0]]);
+
+        software.forEach(software => {
+            const { nombre, version, fecha_vencimiento, detalles_licencia } = software;
+
+            db.query(
+                'INSERT INTO Software (nombre, version, fecha_vencimiento, detalles_licencia) VALUES (?, ?, ?, ?)',
+                [nombre, version, fecha_vencimiento, detalles_licencia],
+                (err, results) => {
+                    if (err) {
+                        console.error('Error al insertar software:', err);
+                    }
+                }
+            );
+        });
+        req.flash('success_msg', 'Software cargados exitosamente');
+        res.redirect('/software/listar');
+    } else {
+        req.flash('error_msg', 'Formato de archivo no soportado');
+        return res.redirect('/software/listar');
+    }
 });
 
 // Ruta para listar software sin filtros
