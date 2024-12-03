@@ -4,6 +4,36 @@ CREATE DATABASE IF NOT EXISTS inventareandolepanto;
 -- Usar la base de datos
 USE inventareandolepanto;
 
+-- Tabla de Tipos de Usuarios
+CREATE TABLE IF NOT EXISTS TiposUsuarios (
+    id_tipo_usuario INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_usuario ENUM('Informática', 'Mecánica', 'Biblioteca') NOT NULL,
+    INDEX (tipo_usuario)
+);
+
+-- Tabla de Tipos de Ubicación
+CREATE TABLE IF NOT EXISTS Tipos_Ubicacion (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    tipo_ubicacion ENUM('Informática', 'Mecánica', 'Biblioteca') NOT NULL
+);
+
+-- Tabla de Roles (Tic = informática, Mec = Mecanica, Blica = Biblioteca)
+CREATE TABLE IF NOT EXISTS Roles (
+    id_rol INT AUTO_INCREMENT PRIMARY KEY,
+    rol ENUM('adminTic', 'tecnicoTic', 'usuarioTic', 'adminMec', 'tecnicoMec', 'usuarioMec', 'adminBlic', 'usuarioBlic') NOT NULL,
+    INDEX (rol)
+);
+
+-- Actualización en la tabla de Ubicaciones
+CREATE TABLE IF NOT EXISTS Ubicaciones (
+    id_ubicacion INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_ubicacion VARCHAR(100) NOT NULL UNIQUE,
+    departamento_responsable VARCHAR(50),
+    id_tipo_ubicacion INT,
+    FOREIGN KEY (id_tipo_ubicacion) REFERENCES Tipos_Ubicacion(id),
+    INDEX (nombre_ubicacion)
+);
+
 -- Tabla de Usuarios
 CREATE TABLE IF NOT EXISTS Usuarios (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -17,24 +47,11 @@ CREATE TABLE IF NOT EXISTS Usuarios (
     INDEX (email)
 );
 
--- Tabla de Roles (Tic = informática, Mec = Mecanica, Blica = Biblioteca)
-CREATE TABLE IF NOT EXISTS Roles (
-    id_rol INT AUTO_INCREMENT PRIMARY KEY,
-    rol ENUM('adminTic', 'tecnicoTic', 'usuarioTic', 'adminMec', 'tecnicoMec', 'usuarioMec', 'adminBlic', 'usuarioBlic') NOT NULL,
-    INDEX (rol)
-);
-
--- Tabla de Tipos de Usuarios
-CREATE TABLE IF NOT EXISTS TiposUsuarios (
-    id_tipo_usuario INT AUTO_INCREMENT PRIMARY KEY,
-    tipo_usuario ENUM('Informática', 'Mecánica', 'Biblioteca') NOT NULL,
-    INDEX (tipo_usuario)
-);
-
 -- Tabla de Roles de Usuarios (intermedia para permitir múltiples roles por usuario)
 CREATE TABLE IF NOT EXISTS RolesUsuarios (
     id_usuario INT,
     id_rol INT,
+    fecha_asignacion DATETIME DEFAULT CURRENT_TIMESTAMP,  -- Agregar fecha de asignación
     PRIMARY KEY (id_usuario, id_rol),
     FOREIGN KEY (id_usuario) REFERENCES Usuarios(id),
     FOREIGN KEY (id_rol) REFERENCES Roles(id_rol)
@@ -69,6 +86,36 @@ CREATE TABLE IF NOT EXISTS Componentes (
     INDEX (estado)
 );
 
+-- Tabla de Software
+CREATE TABLE Software (
+    id_software INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL UNIQUE,
+    version VARCHAR(20) NOT NULL,
+    fecha_vencimiento DATE,
+    detalles_licencia VARCHAR(100) NOT NULL,
+    fecha_creacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    fecha_modificacion DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    id_equipo INT,
+    FOREIGN KEY (id_equipo) REFERENCES Equipos(id_equipo),
+    INDEX (nombre),
+    INDEX (version),
+    INDEX (id_equipo)
+);
+
+-- Tabla de Incidencias
+CREATE TABLE IF NOT EXISTS Incidencias (
+    id_incidencia INT AUTO_INCREMENT PRIMARY KEY,
+    descripcion_incidencia VARCHAR(200) NOT NULL,
+    fecha_reporte DATETIME NOT NULL,
+    estado ENUM('abierta', 'en progreso', 'cerrada', 'cancelada') DEFAULT 'abierta',
+    prioridad ENUM('baja', 'media', 'alta') DEFAULT 'media',
+    id_usuario INT,
+    FOREIGN KEY (id_usuario) REFERENCES Usuarios(id),
+    INDEX (id_usuario),
+    INDEX (estado),
+    INDEX (prioridad)
+);
+
 -- Tabla de Mantenimiento de Equipos
 CREATE TABLE IF NOT EXISTS MantenimientoEquipos (
     id_mantenimiento INT AUTO_INCREMENT PRIMARY KEY,
@@ -97,20 +144,6 @@ CREATE TABLE IF NOT EXISTS MantenimientoComponentes (
     FOREIGN KEY (id_componente) REFERENCES Componentes(id_componente),
     INDEX (id_componente),
     INDEX (estado)
-);
-
--- Tabla de Incidencias
-CREATE TABLE IF NOT EXISTS Incidencias (
-    id_incidencia INT AUTO_INCREMENT PRIMARY KEY,
-    descripcion_incidencia VARCHAR(200) NOT NULL,
-    fecha_reporte DATETIME NOT NULL,
-    estado ENUM('abierta', 'en progreso', 'cerrada', 'cancelada') DEFAULT 'abierta',
-    prioridad ENUM('baja', 'media', 'alta') DEFAULT 'media',
-    id_usuario INT,
-    FOREIGN KEY (id_usuario) REFERENCES Usuarios(id),
-    INDEX (id_usuario),
-    INDEX (estado),
-    INDEX (prioridad)
 );
 
 -- Tabla de Coches
@@ -213,4 +246,14 @@ CREATE TABLE IF NOT EXISTS HistorialFechas (
     fecha_modificacion DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (id_usuario) REFERENCES Usuarios(id) ON DELETE CASCADE,
     INDEX (id_usuario)
+);
+
+-- Tabla de Accesos a Bibliotecas (para gestionar qué usuarios tienen acceso a qué biblioteca)
+CREATE TABLE IF NOT EXISTS AccesosBiblioteca (
+    id_usuario INT,
+    id_biblioteca INT,
+    fecha_asignacion DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id_usuario, id_biblioteca),
+    FOREIGN KEY (id_usuario) REFERENCES Usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (id_biblioteca) REFERENCES Bibliotecas(id_biblioteca) ON DELETE CASCADE
 );
