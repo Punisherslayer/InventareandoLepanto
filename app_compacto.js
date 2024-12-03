@@ -982,6 +982,21 @@ app.post('/mantenimiento_equipos/alta', authMiddleware, roleMiddleware(['admin',
     const { tipo, descripcion_mantenimiento, fecha_mantenimiento, id_ubicacion, id_equipo, id_usuario, estado } = req.body;
 
     try {
+        // Verificar si ya existe un mantenimiento activo (pendiente o en progreso) para el equipo
+        const mantenimientoExistente = await query(`
+            SELECT m.id_mantenimiento, m.estado, u.username 
+            FROM Mantenimiento m
+            JOIN Usuarios u ON m.id_usuario = u.id
+            WHERE m.id_equipo = ? AND m.estado NOT IN ('completado', 'cancelado')
+        `, [id_equipo]);
+
+        if (mantenimientoExistente.length > 0) {
+            // Si ya hay un mantenimiento activo, informar al usuario
+            const responsable = mantenimientoExistente[0].username;
+            req.flash('error_msg', `El mantenimiento ya está siendo gestionado por el usuario ${responsable}.`);
+            return res.redirect('/mantenimiento_equipos/alta');
+        }
+
         // Guardar mantenimiento en la base de datos de equipos
         await query(
             'INSERT INTO Mantenimiento (tipo, descripcion_mantenimiento, fecha_mantenimiento, id_equipo, id_usuario, id_ubicacion, estado) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -1020,15 +1035,19 @@ app.post('/mantenimiento_equipos/alta', authMiddleware, roleMiddleware(['admin',
         }
 
         // Redirigir o responder según corresponda de equipos
+        req.flash('success_msg', 'Mantenimiento creado con éxito.');
         res.redirect('/mantenimiento_equipos/listar');
     } catch (err) {
         console.error('Error al dar de alta el mantenimiento:', err);
-        res.status(500).send('Error al procesar la solicitud');
+        req.flash('error_msg', 'Error al procesar la solicitud.');
+        res.redirect('/mantenimiento_equipos/alta');
     }
 });
 
 // Rutas para listar mantenimiento de equipos
 app.get('/mantenimiento_equipos/listar', authMiddleware, roleMiddleware(['admin', 'tecnico']), async (req, res) => {
+    const userId = req.session.user.id;
+
     const queryString = `
         SELECT m.id_mantenimiento, m.tipo, m.descripcion_mantenimiento, m.fecha_mantenimiento, 
                e.marca AS nombre_equipo, u.username AS nombre_usuario, 
@@ -1038,16 +1057,13 @@ app.get('/mantenimiento_equipos/listar', authMiddleware, roleMiddleware(['admin'
         JOIN Usuarios u ON m.id_usuario = u.id
         JOIN Ubicaciones ubic ON m.id_ubicacion = ubic.id_ubicacion
         LEFT JOIN Incidencias i ON m.id_equipo = i.id_equipo
-    `;
+        WHERE m.id_usuario = ?`;
 
     try {
-        const results = await query(queryString);
-
-        // Obtener las ubicaciones para el filtro
+        const results = await query(queryString, [userId]);
         const ubicaciones = await query('SELECT * FROM Ubicaciones');
         const user = req.session.user;
 
-        // Pasar las ubicaciones junto con los resultados del mantenimiento
         res.render('equipos/mantenimiento_equipos_listar', {
             mantenimiento: results,
             ubicaciones: ubicaciones,
@@ -1146,18 +1162,15 @@ app.post('/mantenimiento_equipos/eliminar/:id_mantenimiento', authMiddleware, ro
     const idMantenimiento = req.params.id_mantenimiento;
 
     try {
-        // Primero, eliminar la incidencia asociada al mantenimiento de equipos
-        await query('DELETE FROM Incidencias WHERE id_equipo = (SELECT id_equipo FROM Mantenimiento WHERE id_mantenimiento = ?)', [idMantenimiento]);
-
-        // Luego, eliminar el mantenimiento de equipos
+        // Eliminar únicamente el mantenimiento de equipos
         await query('DELETE FROM Mantenimiento WHERE id_mantenimiento = ?', [idMantenimiento]);
 
         // Agregar mensaje de éxito
         req.flash('success', 'Mantenimiento eliminado exitosamente');
         res.redirect('/mantenimiento_equipos/listar');
     } catch (error) {
-        console.error('Error al eliminar el mantenimiento y su incidencia:', error);
-        res.status(500).send('Error al eliminar mantenimiento e incidencia');
+        console.error('Error al eliminar el mantenimiento:', error);
+        res.status(500).send('Error al eliminar el mantenimiento');
     }
 });
 
@@ -1379,6 +1392,21 @@ app.post('/mantenimiento_hardware/alta', authMiddleware, roleMiddleware(['admin'
     const { tipo, descripcion_mantenimiento, fecha_mantenimiento, id_ubicacion, id_hardware, id_usuario, estado } = req.body;
 
     try {
+        // Verificar si ya existe un mantenimiento activo (pendiente o en progreso) para el hardware
+        const mantenimientoExistente = await query(`
+            SELECT m.id_mantenimiento, m.estado, u.username 
+            FROM Mantenimiento m
+            JOIN Usuarios u ON m.id_usuario = u.id
+            WHERE m.id_hardware = ? AND m.estado NOT IN ('completado', 'cancelado')
+        `, [id_hardware]);
+
+        if (mantenimientoExistente.length > 0) {
+            // Si ya hay un mantenimiento activo, informar al usuario
+            const responsable = mantenimientoExistente[0].username;
+            req.flash('error_msg', `El mantenimiento ya está siendo gestionado por el usuario ${responsable}.`);
+            return res.redirect('/mantenimiento_hardware/alta');
+        }
+
         // Guardar mantenimiento en la base de datos de hardware
         await query(
             'INSERT INTO Mantenimiento (tipo, descripcion_mantenimiento, fecha_mantenimiento, id_hardware, id_usuario, id_ubicacion, estado) VALUES (?, ?, ?, ?, ?, ?, ?)',
@@ -1417,15 +1445,19 @@ app.post('/mantenimiento_hardware/alta', authMiddleware, roleMiddleware(['admin'
         }
 
         // Redirigir o responder según corresponda de hardware
+        req.flash('success_msg', 'Mantenimiento creado con éxito.');
         res.redirect('/mantenimiento_hardware/listar');
     } catch (err) {
         console.error('Error al dar de alta el mantenimiento:', err);
-        res.status(500).send('Error al procesar la solicitud');
+        req.flash('error_msg', 'Error al procesar la solicitud.');
+        res.redirect('/mantenimiento_hardware/alta');
     }
 });
 
 // Rutas para listar mantenimiento de hardware
 app.get('/mantenimiento_hardware/listar', authMiddleware, roleMiddleware(['admin', 'tecnico']), async (req, res) => {
+    const userId = req.session.user.id;
+
     const queryString = `
         SELECT m.id_mantenimiento, m.tipo, m.descripcion_mantenimiento, m.fecha_mantenimiento, 
                h.marca AS nombre_hardware, u.username AS nombre_usuario, 
@@ -1435,10 +1467,10 @@ app.get('/mantenimiento_hardware/listar', authMiddleware, roleMiddleware(['admin
         JOIN Usuarios u ON m.id_usuario = u.id
         JOIN Ubicaciones ubic ON m.id_ubicacion = ubic.id_ubicacion
         LEFT JOIN Incidencias i ON m.id_hardware = i.id_hardware
-    `;
-    
+        WHERE m.id_usuario = ?`;
+
     try {
-        const mantenimientoResults = await query(queryString);
+        const mantenimientoResults = await query(queryString, [userId]);
         const ubicaciones = await query('SELECT * FROM Ubicaciones');
         const user = req.session.user;
 
@@ -1542,18 +1574,15 @@ app.post('/mantenimiento_hardware/eliminar/:id_mantenimiento', authMiddleware, r
     const idMantenimiento = req.params.id_mantenimiento;
 
     try {
-        // Primero, eliminar la incidencia asociada al mantenimiento de hardware
-        await query('DELETE FROM Incidencias WHERE id_hardware = (SELECT id_hardware FROM Mantenimiento WHERE id_mantenimiento = ?)', [idMantenimiento]);
-
-        // Luego, eliminar el mantenimiento de hardware
+        // Eliminar únicamente el mantenimiento de hardware
         await query('DELETE FROM Mantenimiento WHERE id_mantenimiento = ?', [idMantenimiento]);
 
         // Agregar mensaje de éxito
         req.flash('success', 'Mantenimiento eliminado exitosamente');
         res.redirect('/mantenimiento_hardware/listar');
     } catch (error) {
-        console.error('Error al eliminar el mantenimiento y su incidencia:', error);
-        res.status(500).send('Error al eliminar mantenimiento e incidencia');
+        console.error('Error al eliminar el mantenimiento:', error);
+        res.status(500).send('Error al eliminar el mantenimiento');
     }
 });
 

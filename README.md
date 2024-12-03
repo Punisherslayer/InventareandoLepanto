@@ -112,6 +112,27 @@ Este proyecto está bajo la licencia MIT. Para más detalles, consulta el archiv
 
 - **Nota sobre ngrok:** Se implementó **ngrok** para la conexión de la aplicación a internet de forma temporal al iniciar la aplicación. Si no se quiere utilizar ngrok, se debe comentar/eliminar las líneas **16, 1720 y 1726** del archivo `app_compacto.js`. Si se quiere desinstalar el módulo, usa el comando **npm uninstall ngrok**. En caso de que se quiera utilizar ngrok, se debe crear una cuenta en **ngrok.com** y generar un token de acceso.
 
+## ACTUALIZACIÓN 03/12/2024
+
+- **Mejoras Realizadas:** Se ha optimizado el listado de mantenimiento (equipos y hardware). Ahora, al listar, solo aparecerán los mantenimientos creados por el usuario. Los mantenimientos de otros usuarios no serán visibles hasta que se actualicen a los estados **completo**, **cancelado** o **eliminado**. Se ha añadido la base de datos original de la aplicación (la que se ha usado) y una base de datos actualizada hasta lo que se cree que es la 5ª forma normal (en caso de redundancia, mejorarla y normalizarla).
+
+- **Mejoras por Implementar:**
+1. **Añadir un historial de mantenimientos**: Registro de las intervenciones realizadas en un equipo o hardware.
+
+2. **Normalizar la base de datos**: Estandarizarla para facilitar su mantenimiento y escalabilidad a la 5ª forma normal.
+
+3. **Añadir más secciones a la base de datos y la aplicación**: Incorporar módulos como mecánica y biblioteca para una mejor gestión.
+
+4. **Coordinar con la Comunidad de Madrid**: Implementar correos oficiales para que, al registrar una incidencia, se notifique al técnico o administrador. Además, cuando se programe un mantenimiento, enviar un correo al usuario que reportó la incidencia con detalles sobre su equipo.
+
+5. **Mejorar el sistema de apertura de incidencias y gestión de equipos**: Asignar un equipo a cada usuario para que solo pueda reportar incidencias relacionadas con su propio equipo.
+
+6. **Optimizar el diseño responsive**: Garantizar que la aplicación sea más adaptable a diferentes dispositivos (opcional/recomendado). También se propone mejorar el **diseño de las vistas** (opcional).
+
+7. **Actualizar el sistema de mensajería instantánea**: Mejorar el diseño, agregar notificaciones con números, permitir responder a mensajes, entre otros. Se busca implementar funcionalidades similares a **WhatsApp**.
+
+8. **Incrementar la seguridad**: Proponer mejoras en la protección de datos y accesos (opcional/recomendado).
+
 # Inventory Management - IES Ntra. Sra. de la Victoria de Lepanto in english
 
 ## Description
@@ -224,3 +245,24 @@ This project is licensed under the MIT license. For more details, see the `LICEN
 - **Improvements Made:** Instant messaging with **notifications** has been improved, the **design** of the filter buttons has been enhanced, **ngrok** has been added for temporarily connecting the application to the internet upon startup, and the upload of csv/xls files has been added in the **users** section.
 
 - **Note about ngrok:** **Ngrok** has been implemented to temporarily connect the application to the internet upon startup. If you do not want to use ngrok, you should comment out/delete lines **16, 1720, and 1726** in the `app_compacto.js` file. If you wish to uninstall the module, use the command **npm uninstall ngrok**. To use ngrok, you need to create an account on **ngrok.com** and generate an access token.
+
+## UPDATE 12/03/2024
+
+- **Improvements Made:** The maintenance listing (equipment and hardware) has been optimized. Now, only maintenances created by the user will appear in the list. Maintenances of other users will not be visible until their status is updated to **completed**, **canceled**, or **deleted**. The original database of the application has been added (the one currently in use), along with an updated database that is believed to be in the 5th normal form (if any redundancy is found, it will be improved and normalized).
+
+- **Improvements to Implement:**
+1. **Add a maintenance history**: Record of interventions performed on equipment or hardware.
+
+2. **Normalize the database**: Standardize it to improve maintenance and scalability (5NF).
+
+3. **Add more sections to the database and the application**: Incorporate modules such as mechanics and library for better management.
+
+4. **Coordinate with the Community of Madrid**: Implement official emails to notify technicians or administrators when an issue is reported. Additionally, when a maintenance task is scheduled, send an email to the user who reported the issue with details about their equipment.
+
+5. **Improve the incident reporting system and equipment management**: Assign a device to each user so they can only report incidents related to their own equipment.
+
+6. **Optimize responsive design**: Ensure the application is more adaptable to different devices (optional/recommended). Also, improve the **view designs** (optional).
+
+7. **Update the instant messaging system**: Improve the design, add notifications with numbers, allow replying to messages, among other features. Implement functionalities similar to **WhatsApp**.
+
+8. **Increase security**: Propose improvements in data protection and access control (optional/recommended).
