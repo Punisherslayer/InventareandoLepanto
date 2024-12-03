@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS Usuarios (
 CREATE TABLE IF NOT EXISTS RolesUsuarios (
     id_usuario INT,
     id_rol INT,
-    fecha_asignacion DATETIME DEFAULT CURRENT_TIMESTAMP,  -- Agregar fecha de asignación
+    fecha_asignacion DATETIME DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id_usuario, id_rol),
     FOREIGN KEY (id_usuario) REFERENCES Usuarios(id),
     FOREIGN KEY (id_rol) REFERENCES Roles(id_rol)
